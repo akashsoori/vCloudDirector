@@ -1,8 +1,6 @@
 $ErrorActionPreference = "Stop"
 
 . C:\apps\VMWare\CloudOps\Library.ps1
-
-SelectedCloud
     
 Login
 
