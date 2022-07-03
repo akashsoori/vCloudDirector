@@ -226,3 +226,75 @@ Function Logout
 	Write-Host "Logging out of $ENV:SelectedCloud PL Cloud..."
 	Disconnect-CIServer $ENV:Cloud -Force -Confirm:$False
 }
+
+Function DeleteVApp
+{
+    $MyVApp = Get-CIVApp -Name $ENV:VAppName
+
+    Write-Host "Deleting $ENV:VAppName VM... `n"
+	Remove-CIVApp -VApp $MyVApp -Confirm:`$False
+}
+
+Function CheckTemplateExists
+{
+    Write-Host "`nChecking existing template $ENV:TemplateName in Catalog. `n"
+    $error.Clear()
+    
+	$MyVapptemplate=Get-Catalog "$ENV:Catalog" | Get-CIVAppTemplate -Name "$ENV:TemplateName" -ErrorAction Ignore
+    
+	if($MyVapptemplate)
+    {
+	    Write-Host "$ENV:TemplateName already exists in catalog $ENV:Catalog in $ENV:Organization"
+	    $VappTemplateOrgVDC=Get-OrgVdc -Name $myVapptemplate.OrgVdc.Name
+	    $VappTemplateOrg=$VappTemplateOrgVDC.Org.Name
+
+	    if ("$VappTemplateOrg" -eq "$ENV:Organization")
+	    {
+            $TemplateName = "$ENV:TemplateName" + "_"  + "$ENV:myjobId"
+            Write-Host "Renaming $ENV:TemplateName to $TemplateName"
+            $ENV:TemplateName = $TemplateName
+	    }
+    }
+    else
+    {
+	    write-host $Error
+	    Write-Host "$ENV:TemplateName not found in Catalog $ENV:Catalog in $ENV:Organization"
+    }
+}
+
+Function CaptureAsTemplate
+{
+    Write-Host "Capturing VM as template in catalog $ENV:Catalog in Cloud $ENV:Cloud. `n"
+    Get-CIVApp $ENV:VAppName | New-CIVAppTemplate -Name $ENV:TemplateName -OrgVdc "$ENV:OrgVDC" -Catalog "$ENV:Catalog" -Description "$ENV:VAppName"
+    
+	CheckVAppTasks
+}
+
+Function RenameVApp
+{
+    $MyVApp = Get-CIVApp -Name $ENV:VAppName
+
+    Write-Host "Changing name of the Vapp from _wip to _fail..."
+    $FailVappName = "$ENV:VAppName" -replace "_wip","_fail"
+    $MyVApp | Set-CIVApp -Name $FailVappName
+}
+
+Function RebootVApp
+{
+	$MyVApp = Get-CIVApp -Name $ENV:VAppName
+	$MyVM = Get-CIVApp $MyVApp | Get-CIVM
+
+	$VMStatus = $MyVM.Status
+	if ( $VMStatus -eq "PoweredOn" )
+	{
+		Write-Host -NoNewline "`nStopping VApp $ENV:VAppName..."
+		Stop-CIVApp -VApp $ENV:VAppName -Confirm:$False
+	}
+
+	CheckVAppTasks
+
+	Write-Host "Starting VApp $ENV:VAppName..."
+	Start-CIVApp -VApp $ENV:VAppName
+
+	CheckVAppTasks
+}
