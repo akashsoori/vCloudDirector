@@ -8,8 +8,6 @@ StopVApp
 
 UpdateCPUandRAM
 
-CaptureUpdateVAppMetadata
-
 CheckTemplateExists
 
 CaptureAsTemplate
