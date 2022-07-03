@@ -6,6 +6,6 @@ Login
 
 StopVApp
 
-DeleteVM
+DeleteVApp
 
 Logout
